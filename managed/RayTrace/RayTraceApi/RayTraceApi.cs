@@ -64,47 +64,45 @@ namespace RayTraceAPI
         MASK_NPC_MOVE = Solid | Window | NPCClip | PassBullets
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 24)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct TraceOptions
     {
-        [FieldOffset(0)] public ulong InteractsWith;
-        [FieldOffset(8)] public ulong InteractsExclude;
-        [FieldOffset(16)] public int DrawBeam;
+        public ulong InteractsWith;
+        public ulong InteractsExclude;
+        public int DrawBeam;
+        private int padding;
 
-        public TraceOptions()
+        public TraceOptions(ulong interactsWith, ulong interactsExclude = 0, bool drawBeam = false)
         {
-            InteractsWith = (ulong)InteractionLayers.MASK_SHOT_PHYSICS;
-            InteractsExclude = 0;
-            DrawBeam = 0;
-        }
-
-        public TraceOptions(InteractionLayers interactsWith, InteractionLayers interactsExclude = 0, bool drawBeam = false)
-        {
-            InteractsWith = (ulong)interactsWith;
-            InteractsExclude = (ulong)interactsExclude;
+            InteractsWith = interactsWith;
+            InteractsExclude = interactsExclude;
             DrawBeam = drawBeam ? 1 : 0;
+            padding = 0;
         }
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 44)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct TraceResult
     {
-        [FieldOffset(0)] public float EndPosX;
-        [FieldOffset(4)] public float EndPosY;
-        [FieldOffset(8)] public float EndPosZ;
-        [FieldOffset(16)] public nint HitEntity;
-        [FieldOffset(24)] public float Fraction;
-        [FieldOffset(28)] public int AllSolid;
-        [FieldOffset(32)] public float NormalX;
-        [FieldOffset(36)] public float NormalY;
-        [FieldOffset(40)] public float NormalZ;
+        public float EndPosX;
+        public float EndPosY;
+        public float EndPosZ;
+
+        public nint HitEntity;
+
+        public float Fraction;
+        public int AllSolid;
+
+        public float NormalX;
+        public float NormalY;
+        public float NormalZ;
 
         public Vector3 EndPos => new(EndPosX, EndPosY, EndPosZ);
         public Vector3 Normal => new(NormalX, NormalY, NormalZ);
         public bool DidHit => Fraction < 1.0f;
         public bool IsAllSolid => AllSolid != 0;
     }
-#endregion
+    #endregion
 
     public interface CRayTraceInterface
     {

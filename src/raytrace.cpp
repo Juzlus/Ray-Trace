@@ -152,24 +152,40 @@ namespace RayTracePlugin::RayTrace
 
     std::optional<TraceResult> CRayTrace::TraceHullShapeInternal(const Vector& vecStart, const Vector& vecEnd, const Vector& vecMins, const Vector& vecMaxs, CEntityInstance* pIgnoreEntity, const TraceOptions* pTraceOptions)
     {
-        CTraceFilterEx filter = pIgnoreEntity ? CTraceFilterEx(static_cast<CBaseEntity*>(pIgnoreEntity)) : CTraceFilterEx();
+        CBaseEntity* pEntity = static_cast<CBaseEntity*>(pIgnoreEntity);
 
-        filter.m_nInteractsAs = 0;
-        filter.m_nInteractsWith = static_cast<uint64_t>(MASK_SHOT_PHYSICS);
-        filter.m_nInteractsExclude = 0;
-
-        if (pTraceOptions)
+        auto ExecuteTrace = [&](CTraceFilterEx& filter) -> std::optional<TraceResult> 
         {
-            if (pTraceOptions->InteractsWith != static_cast<uint64_t>(MASK_SHOT_PHYSICS))
-                filter.m_nInteractsWith = pTraceOptions->InteractsWith;
+            filter.m_nInteractsAs = 0;
+            filter.m_nInteractsWith = static_cast<uint64_t>(MASK_SHOT_PHYSICS);
+            filter.m_nInteractsExclude = 0;
 
-            if (pTraceOptions->InteractsExclude != 0)
-                filter.m_nInteractsExclude = pTraceOptions->InteractsExclude;
+            if (pTraceOptions)
+            {
+                if (pTraceOptions->InteractsWith != static_cast<uint64_t>(MASK_SHOT_PHYSICS))
+                    filter.m_nInteractsWith = pTraceOptions->InteractsWith;
+
+                if (pTraceOptions->InteractsExclude != 0)
+                    filter.m_nInteractsExclude = pTraceOptions->InteractsExclude;
+            }
+
+            Ray_t ray;
+            ray.Init(vecMins, vecMaxs);
+            return TraceShapeExInternal(vecStart, vecEnd, filter, ray);
+        };
+
+        std::optional<TraceResult> res;
+
+        if (pEntity && pEntity->m_pCollision() != nullptr)
+        {
+            CTraceFilterEx filter(pEntity);
+            res = ExecuteTrace(filter);
         }
-
-        Ray_t ray;
-        ray.Init(vecMins, vecMaxs);
-        auto res = TraceShapeExInternal(vecStart, vecEnd, filter, ray);
+        else
+        {
+            CTraceFilterEx filter; 
+            res = ExecuteTrace(filter);
+        }
 
         if (pTraceOptions && pTraceOptions->DrawBeam)
         {
